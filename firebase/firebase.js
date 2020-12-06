@@ -1,4 +1,6 @@
 import app from 'firebase/app';
+import 'firebase/auth';
+import 'firebase/firestore';
 
 import firebaseConfig from './config';
 
@@ -7,6 +9,27 @@ class Firebase {
         if(!app.apps.length) {
             app.initializeApp(firebaseConfig)
         }
+        this.auth = app.auth();
+        this.db = app.firestore();
+    }
+
+    // Registra un usuario
+    async registrar(nombre, email, password) {
+        const nuevoUsuario = await this.auth.createUserWithEmailAndPassword(email, password);
+
+        return await nuevoUsuario.user.updateProfile({
+            displayName : nombre
+        })
+    }
+
+    //Inicia sesion dek usuario
+    async login(email, password) {
+        return this.auth.signInWithEmailAndPassword(email, password);
+    }
+
+    //cerrar sesion
+    async cerrarSesion() {
+        await this.auth.signOut();
     }
 };
 
