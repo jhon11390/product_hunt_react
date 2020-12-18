@@ -1,11 +1,14 @@
 import React, { useState, useContext } from 'react';
 import { css } from '@emotion/react';
 import Router, { useRouter } from 'next/router';
+import uuid from 'react-uuid';
 import FileUploader from 'react-firebase-file-uploader';
 import Layout from '../components/layout/Layout';
 import { Formulario, Campo, InputSubmit, Error } from '../components/ui/Formulario';
 
 import { FirebaseContext } from '../firebase';
+
+import Error404 from '../components/layout/404';
 
 // validaciones
 import useValidacion from '../hooks/useValidacion';
@@ -44,6 +47,8 @@ const NuevoProducto = () => {
       return router.push('/login')
     }
 
+    const urlimagen = await nombreimagen.getDownloadURL()
+
     //crear el objeto del nuevo producto
     const producto = {
       nombre,
@@ -53,46 +58,44 @@ const NuevoProducto = () => {
       descripcion,
       votos: 0,
       comentarios: [],
-      creado: Date.now()
+      creado: Date.now(),
+      creador: {
+        id: usuario.uid,
+        nombre: usuario.displayName
+      }
     }
 
     // insertarlo en la base de datos
-    firebase.db.collection('productos').add(producto);
+    if(producto.urlimagen){
+      firebase.db.collection('productos').add(producto);
+    }
 
     return router.push('/');
   };
 
-  const handleUploadStart = () => {
-    guardarProgreso(0);
-    guardarSubiendo(true);
-  }
 
-  const handleProgress = progreso => guardarProgreso({ progreso });
+  const handleUploadSuccess = e => {
+    const file = e.target.files[0]
+    const storageRef = firebase.storage.ref("productos").child(uuid())
+    const task = storageRef.put(file)
 
-  const handleUploadError = error => {
-      guardarSubiendo(error);
-      console.error(error);
+    task.on('state_changed', snapshot => {
+      let percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+      guardarProgreso(percentage)
+    }, error => {
+      console.error(error.message);
+    }, () => {
+        guardarNombre(storageRef)
+        console.log(storageRef);
+    })
   };
 
-  const handleUploadSuccess = nombre => {
-      guardarProgreso(100);
-      guardarSubiendo(false);
-      guardarNombre(nombre)
-      firebase
-          .storage
-          .ref("productos")
-          .child(nombre)
-          .getDownloadURL()
-          .then(url => {
-            console.log(url);
-            guardarUrlImagen(url);
-          } );
-  };
 
   return (
     <div>
       <Layout>
-        <>
+        { !usuario ? <Error404 /> :
+          <>
           <h1
              css={css`
                text-align: center;
@@ -144,12 +147,7 @@ const NuevoProducto = () => {
                   accept="image/*"
                   id="imagen"
                   name="imagen"
-                  randomizeFilename
-                  storageRef={firebase.storage.ref("productos")}
-                  onUploadStart={handleUploadStart}
-                  onUploadError={handleUploadError}
-                  onUploadSuccess={handleUploadSuccess}
-                  onProgress={handleProgress}
+                  onChange={handleUploadSuccess}
                 />
               </Campo>
 
@@ -195,6 +193,7 @@ const NuevoProducto = () => {
               />
           </Formulario>
         </>
+        }
       </Layout>
     </div>
   )
