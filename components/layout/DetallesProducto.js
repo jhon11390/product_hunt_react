@@ -90,13 +90,13 @@ const DetallesProducto = ({producto}) => {
                 </div>
 
                 <div>
-                    <Link href="/productos/[id]" as={`/productos/${id}`}>
+                    <Link href="#">
                         <Titulo>{nombre}</Titulo>
                     </Link>
                     <TextoDescripcion>{descripcion}</TextoDescripcion>
                     <Comentarios>
                         <div>
-                            <img src="/static/img/comentario.png" />
+                            <img src="https://raw.githubusercontent.com/juanpablogdl/producthunt_next/master/public/static/img/comentario.png" />
                             <p>{comentarios.length} Comentarios</p>
                         </div>
                     </Comentarios>
